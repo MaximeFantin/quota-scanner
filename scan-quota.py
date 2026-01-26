@@ -1,5 +1,9 @@
 import os
 
+
+directory = os.path.expanduser('~')
+
+
 def humanReadable(size):
     if size > 1_000_000_000:
         return f"{size/1024**3:.2f}G"
@@ -9,7 +13,6 @@ def humanReadable(size):
         return f"{size/1024:.2f}K"
 
 
-directory = '/home/iut45/Etudiants/o22407574/'
 
 def scan():
     explored = 0
@@ -65,4 +68,24 @@ def topSearch(amount):
         stdo += f"\033[94m{folder}\033[0m {humanReadable(size)}\n"
     print(stdo)
 
-topSearch(50)
+
+def strSearch(string):
+    with open("scan.dat", "r") as file:
+        lines = []
+        for line in file:
+            print(line)
+            if not line:
+                continue
+            line = line.split()
+            folder = "".join(line[:-1])
+            if string in folder:
+                size = int(line[-1])
+                lines.append((folder, size))
+
+    print(f"\n--- Folders containing {string} ---")
+    stdo = ""
+    for folder, size in lines:
+        stdo += f"\033[94m{folder}\033[0m {humanReadable(size)}\n"
+    print(stdo)
+
+strSearch(".vs")
