@@ -6,11 +6,12 @@ directory = os.path.expanduser('~')
 
 def humanReadable(size):
     if size > 1_000_000_000:
-        return f"{size/1024**3:.2f}G"
+        return f"{size/1024**3:.2f}Go"
     if size > 1_000_000:
-        return f"{size/1024**2:.2f}M"
+        return f"{size/1024**2:.2f}Mo"
     if size > 1_000:
-        return f"{size/1024:.2f}K"
+        return f"{size/1024:.2f}Ko"
+    return f"{size}o"
 
 
 
@@ -27,9 +28,9 @@ def scan():
                     path += folder + "/"
             explored += 1
             if not explored & 0b0001_1111_1111:
-                print(f"{explored} files scanned")
+                print(f" {explored} files scanned\r", end='')
 
-    print("\n--- 10 biggest folders ---")
+    print("\n\n--- 10 biggest folders ---")
 
     flist = list(folders.items())
     flist = sorted(flist, key=lambda x: x[1])[::-1]
@@ -73,7 +74,6 @@ def strSearch(string):
     with open("scan.dat", "r") as file:
         lines = []
         for line in file:
-            print(line)
             if not line:
                 continue
             line = line.split()
@@ -83,9 +83,21 @@ def strSearch(string):
                 lines.append((folder, size))
 
     print(f"\n--- Folders containing {string} ---")
-    stdo = ""
-    for folder, size in lines:
-        stdo += f"\033[94m{folder}\033[0m {humanReadable(size)}\n"
-    print(stdo)
+    index = 0
+    while index < len(lines):
+        stdo = ""
+        for folder, size in lines[index:index+50]:
+            start = folder.find(string)
+            end = start + len(string)
+            stdo += f"\033[94m{folder[:start]}\033[91m{folder[start:end]}\033[94m{folder[end:]}\033[0m {humanReadable(size)}\n"
+        print(stdo)
 
-strSearch(".vs")
+        index += 50
+        if index >= len(lines):
+            print(f"{len(lines)}/{len(lines)} matches")
+            break
+
+        print(f"{index}/{len(lines)} matches")
+        userInput = input("Press 'ENTER' to continue\nOr 'q' to exit\n")
+        if userInput.lower() == 'q':
+            return
