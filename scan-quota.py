@@ -1,7 +1,10 @@
 import os
 
 
-directory = os.path.expanduser('~')
+homeDir = os.path.expanduser('~')
+saveDir = homeDir + "/.quota-scanner/"
+scanFile = saveDir + "scan.dat"
+filterDir = saveDir + "filter/"
 
 
 def humanReadable(size):
@@ -18,7 +21,7 @@ def humanReadable(size):
 def scan():
     explored = 0
     folders = {}
-    for root, _, files in os.walk(directory):
+    for root, _, files in os.walk(homeDir):
         for filename in files:
             file = os.path.join(root, filename)
             if os.path.isfile(file):
@@ -47,12 +50,12 @@ def scan():
         fout.append(str(si))
         fout.append("\n")
 
-    with open("scan.dat", "w") as f:
+    with open(scanFile, "w") as f:
         f.write("".join(fout))
 
 
 def topSearch(amount):
-    with open("scan.dat", "r") as file:
+    with open(scanFile, "r") as file:
         lines = []
         for i in range(amount):
             line = file.readline()
@@ -71,7 +74,7 @@ def topSearch(amount):
 
 
 def strSearch(string):
-    with open("scan.dat", "r") as file:
+    with open(scanFile, "r") as file:
         lines = []
         for line in file:
             if not line:
@@ -101,3 +104,112 @@ def strSearch(string):
         userInput = input("Press 'ENTER' to continue\nOr 'q' to exit\n")
         if userInput.lower() == 'q':
             return
+
+
+def filter(args):
+    filterHeader = """# Filters can be used to make a selection of folders
+# that can be used for visualization or deletion
+#
+# If your filter doesn't work, you can debug it using 'filter debug %n' (feature not implemented yet)
+#
+# In order to configure this filter
+# write a script using the folowing commands:
+#
+#
+"""
+
+    match args[0]:
+        case "create":
+            if not args[1]:
+                print("Incorect usage: filter create <name>")
+                return
+            with open(filterDir + args[1], "w") as file:
+                file.write(filterHeader % args[1])
+            print(f"Created filter {args[1]}\n'filter edit {args[1]}' to edit")
+        case "list":
+            filters = []
+            for elem in os.listdir(filterDir):
+                if os.path.isfile():
+                    filters.append(elem)
+            print("\n".join(filters))
+        case "edit":
+            if not args[1]:
+                print("Incorect usage: filter edit <name>")
+                return
+            if not os.path.exists(filterDir + args[1]):
+                print(f"This filter does not exists. You can create it using 'filter create {args[1]}'")
+                return
+            os.system(f"nano {filterDir + args[1]}")
+        case "delete":
+            if not args[1]:
+                print("Incorect usage: filter delete <name>")
+                return
+            if not os.path.exists(filterDir + args[1]):
+                print(f"This filter does not exists.")
+                return
+            os.remove(filterDir + args[1])
+        case "explorer":
+            os.system("exo-open --launch FileManager " + filterDir)
+        case "debug":
+            if not args[1]:
+                print("Incorect usage: filter dabug <name>")
+                return
+            if not os.path.exists(filterDir + args[1]):
+                print(f"This filter does not exists.")
+                return
+            #TODO
+            print("Feature not implemented yet.")
+
+
+
+
+#* Menu
+def displayHelp():
+    print(f"""--- All commands ---
+    {"help":<15} - (h|hp) display this menu
+    {"scan":<15} - (sc) deep scan you home directory
+    {"top <amount>":<15} - (tp) show the <amount> biggest folders
+    {"search <word>":<15} - (sr) show all the folders containing <word> in their path
+    {"filter <option>":<15} - (ft) manage filters; type 'help filter' for more informations
+    {"quit":<15} - (q|exit) quit the app
+""")
+
+if __name__ == "__main__":
+    if not os.path.exists(saveDir):
+        os.mkdir(saveDir)
+
+    displayHelp()
+    while True:
+        userInput = input("\033[95m~>\033[0m ")
+        userInput = userInput.strip().split()
+        if not userInput:
+            continue
+        match userInput[0]:
+            case "help"|"hp"|"h":
+                displayHelp()
+            case "quit"|"q"|"exit":
+                break
+            case "scan"|"sc":
+                scan()
+            case "top"|"tp":
+                if len(userInput) == 1:
+                    print("Incorect usage: top <amount>")
+                    continue
+                try:
+                    qte = int(userInput[1])
+                except:
+                    print("Incorect usage: top <amount>; <amount> must be a number")
+                    continue
+                topSearch(qte)
+            case "search"|"sr":
+                if len(userInput) == 1:
+                    print("Incorect usage: search <word>")
+                    continue
+                strSearch(userInput[1])
+            case "filter"|"ft":
+                if len(userInput) == 1:
+                    print("Incorect usage: filter <option>")
+                    continue
+                filter(userInput[1:])
+
+
