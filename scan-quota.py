@@ -18,7 +18,7 @@ def humanReadable(size):
 
 
 
-def scan():
+def scan(*args):
     explored = 0
     folders = {}
     for root, _, files in os.walk(homeDir):
@@ -173,7 +173,39 @@ def filter(args):
 
 
 
-#* Menu
+def quitApp(*args):
+    global appRunning
+    appRunning = False
+
+def displayHelp(*args):
+    b, r = '\033[1m', '\033[0m'
+    if args and args[0] in COMMANDS_REG:
+        cmd = COMMANDS_REG[args[0]]
+        menu = f"\n{b}Command{r}: {cmd["name"]}\
+            \n{b}Usage{r}: {cmd["usage"]}\
+            \n{b}Aliases{r}: {" | ".join(cmd["aliases"])}\
+            \n{b}Description{r}: {cmd["description"]}\
+            \n{b}Details{r}:\n{cmd["help"]}\n"
+
+    else:
+        menu = "--- All commands ---\n"
+        for command in COMMANDS:
+            menu += f"    {command["usage"]:<20}"
+            if len(command["usage"]) > 20:
+                menu += f"\n    {"":<20}"
+            menu += " - "
+            if command["aliases"]:
+                menu += f"({"|".join(command["aliases"])}) "
+            menu += f"{command["description"]}\n"
+    print(menu)
+
+
+
+
+
+
+
+
 COMMANDS = [
     #? "run" key will later be used to directly call the command's code
     {
@@ -181,108 +213,118 @@ COMMANDS = [
         "usage": "help [<command>]",
         "aliases": ["h", "hp"],
         "description": "display this menu",
-        "run": lambda *args:... #TODO
+        "run": displayHelp,
+        "help": """This command gives extended informations abount a given command or lists all existing commands if no argument is given.\
+        \nex:\n'help scan' gives details about the 'scan' command\
+        \n'help' gives a list of all existing commands\
+        \n\nBut if you read this you already know that."""
     },
     {
         "name": "scan",
         "usage": "scan",
         "aliases": ["sc"],
         "description": "deep scan your home directory",
-        "run": lambda *args:... #TODO
+        "run": scan,
+        "help": ""
     },
     {
         "name": "top",
         "usage": "top <amount>",
         "aliases": ["tp"],
         "description": "show the <amount> biggest folders",
-        "run": lambda *args:... #TODO
+        "run": lambda *args:..., #TODO
+        "help": ""
     },
     {
         "name": "search",
         "usage": "search <word>",
         "aliases": ["sr"],
         "description": "show all the folders containing <word> in their path",
-        "run": lambda *args:... #TODO
+        "run": lambda *args:..., #TODO
+        "help": ""
     },
     {
         "name": "filter",
         "usage": "filter <option> [<name>]",
         "aliases": ["ft"],
         "description": "manage filters; type 'help filter' for more informations",
-        "run": lambda *args:... #TODO
+        "run": lambda *args:..., #TODO
+        "help": ""
     },
     {
         "name": "quit",
         "usage": "quit",
         "aliases": ["q", "exit"],
         "description": "quit the app",
-        "run": lambda *args:... #TODO
+        "run": quitApp,
+        "help": "Do exactly what is advertised: Close the application."
     }
 ]
 
-def displayHelp():
-    menu = "--- All commands ---\n"
-    for command in COMMANDS:
-        menu += f"    {command["usage"]:<15}"
-        if len(command["usage"] > 15):
-            menu += "\n"
-        menu += f" - ({"|".join(command["aliases"])}) {command["description"]}\n"
-    print(menu)
+def buildCommands():
+    global COMMANDS_LIB
+    global COMMANDS_REG
+    COMMANDS_LIB = {}
+    COMMANDS_REG = {}
+    for cmd in COMMANDS:
+        COMMANDS_LIB[cmd["name"]] = cmd["run"]
+        COMMANDS_REG[cmd["name"]] = cmd
+        for als in cmd["aliases"]:
+            COMMANDS_LIB[als] = cmd["run"]
 
-    print(f"""--- All commands ---
-    {"help":<15} - (h|hp) display this menu
-    {"scan":<15} - (sc) deep scan you home directory
-    {"top <amount>":<15} - (tp) show the <amount> biggest folders
-    {"search <word>":<15} - (sr) show all the folders containing <word> in their path
-    filter <option> [<name>]
-    {" "*15} - (ft) manage filters; type 'help filter' for more informations
-    {"quit":<15} - (q|exit) quit the app
-""")
+#* Menu
 
 if __name__ == "__main__":
+    buildCommands()
     if not os.path.exists(saveDir):
         os.mkdir(saveDir)
     if not os.path.exists(filterDir):
         os.mkdir(filterDir)
 
+    appRunning = True
     displayHelp()
-    while True:
+    while appRunning:
         userInput = input("\033[95m~>\033[0m ")
         userInput = userInput.strip().split()
         if not userInput:
             continue
-        match userInput[0]:
-            case "help"|"hp"|"h":
-                if not len(userInput) == 1:
-                    match userInput[1]:
-                        case "filter":
-                            #TODO
-                            print("Page not implemented yet.")
-                            continue
-                displayHelp()
-            case "quit"|"q"|"exit":
-                break
-            case "scan"|"sc":
-                scan()
-            case "top"|"tp":
-                if len(userInput) == 1:
-                    print("Incorect usage: top <amount>")
-                    continue
-                try:
-                    qte = int(userInput[1])
-                except:
-                    print("Incorect usage: top <amount>; <amount> must be a number")
-                    continue
-                topSearch(qte)
-            case "search"|"sr":
-                if len(userInput) == 1:
-                    print("Incorect usage: search <word>")
-                    continue
-                strSearch(userInput[1])
-            case "filter"|"ft":
-                if len(userInput) == 1:
-                    print("Incorect usage: filter <option>")
-                    continue
-                filter(userInput[1:])
+        command, args = userInput[0], userInput[1:]
+        COMMANDS_LIB.get(command, lambda *args: print("Unknown command"))(*args)
+
+
+
+        # match command:
+        #     case "help"|"hp"|"h":
+        #         if not len(userInput) == 1:
+        #             match userInput[1]:
+        #                 case "filter":
+        #                     #TODO
+        #                     print("Page not implemented yet.")
+        #                     continue
+        #         displayHelp()
+        #     case "quit"|"q"|"exit":
+        #         break
+        #     case "scan"|"sc":
+        #         scan()
+        #     case "top"|"tp":
+        #         if len(userInput) == 1:
+        #             print("Incorect usage: top <amount>")
+        #             continue
+        #         try:
+        #             qte = int(userInput[1])
+        #         except:
+        #             print("Incorect usage: top <amount>; <amount> must be a number")
+        #             continue
+        #         topSearch(qte)
+        #     case "search"|"sr":
+        #         if len(userInput) == 1:
+        #             print("Incorect usage: search <word>")
+        #             continue
+        #         strSearch(userInput[1])
+        #     case "filter"|"ft":
+        #         if len(userInput) == 1:
+        #             print("Incorect usage: filter <option>")
+        #             continue
+        #         filter(userInput[1:])
 
 
