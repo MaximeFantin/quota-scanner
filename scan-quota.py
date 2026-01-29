@@ -174,7 +174,61 @@ def filter(args):
 
 
 #* Menu
+COMMANDS = [
+    #? "run" key will later be used to directly call the command's code
+    {
+        "name": "help",
+        "usage": "help [<command>]",
+        "aliases": ["h", "hp"],
+        "description": "display this menu",
+        "run": lambda *args:... #TODO
+    },
+    {
+        "name": "scan",
+        "usage": "scan",
+        "aliases": ["sc"],
+        "description": "deep scan your home directory",
+        "run": lambda *args:... #TODO
+    },
+    {
+        "name": "top",
+        "usage": "top <amount>",
+        "aliases": ["tp"],
+        "description": "show the <amount> biggest folders",
+        "run": lambda *args:... #TODO
+    },
+    {
+        "name": "search",
+        "usage": "search <word>",
+        "aliases": ["sr"],
+        "description": "show all the folders containing <word> in their path",
+        "run": lambda *args:... #TODO
+    },
+    {
+        "name": "filter",
+        "usage": "filter <option> [<name>]",
+        "aliases": ["ft"],
+        "description": "manage filters; type 'help filter' for more informations",
+        "run": lambda *args:... #TODO
+    },
+    {
+        "name": "quit",
+        "usage": "quit",
+        "aliases": ["q", "exit"],
+        "description": "quit the app",
+        "run": lambda *args:... #TODO
+    }
+]
+
 def displayHelp():
+    menu = "--- All commands ---\n"
+    for command in COMMANDS:
+        menu += f"    {command["usage"]:<15}"
+        if len(command["usage"] > 15):
+            menu += "\n"
+        menu += f" - ({"|".join(command["aliases"])}) {command["description"]}\n"
+    print(menu)
+
     print(f"""--- All commands ---
     {"help":<15} - (h|hp) display this menu
     {"scan":<15} - (sc) deep scan you home directory
