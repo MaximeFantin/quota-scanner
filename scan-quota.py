@@ -127,19 +127,25 @@ def filter(args):
                 file.write(filterHeader % args[1])
             print(f"Created filter {args[1]}\n'filter edit {args[1]}' to edit")
         case "list":
-            filters = []
-            for elem in os.listdir(filterDir):
-                if os.path.isfile():
-                    filters.append(elem)
-            print("\n".join(filters))
+            if os.path.exists(filterDir):
+                filters = []
+                for elem in os.listdir(filterDir):
+                    if os.path.isfile():
+                        filters.append(elem)
+                print("\n".join(filters))
+            else:
+                print("No filters found")
         case "edit":
-            if not args[1]:
-                print("Incorect usage: filter edit <name>")
-                return
-            if not os.path.exists(filterDir + args[1]):
-                print(f"This filter does not exists. You can create it using 'filter create {args[1]}'")
-                return
-            os.system(f"nano {filterDir + args[1]}")
+            if os.path.exists(filterDir):
+                if not args[1]:
+                    print("Incorect usage: filter edit <name>")
+                    return
+                if not os.path.exists(filterDir + args[1]):
+                    print(f"This filter does not exists. You can create it using 'filter create {args[1]}'")
+                    return
+                os.system(f"nano {filterDir + args[1]}")
+            else:
+                print("No filters found")
         case "delete":
             if not args[1]:
                 print("Incorect usage: filter delete <name>")
@@ -149,10 +155,14 @@ def filter(args):
                 return
             os.remove(filterDir + args[1])
         case "explorer":
+            if not os.path.exists(filterDir):
+                if not os.path.exists(saveDir):
+                    os.mkdir(saveDir)
+                os.mkdir(filterDir)
             os.system("exo-open --launch FileManager " + filterDir)
         case "debug":
             if not args[1]:
-                print("Incorect usage: filter dabug <name>")
+                print("Incorect usage: filter debug <name>")
                 return
             if not os.path.exists(filterDir + args[1]):
                 print(f"This filter does not exists.")
@@ -170,13 +180,16 @@ def displayHelp():
     {"scan":<15} - (sc) deep scan you home directory
     {"top <amount>":<15} - (tp) show the <amount> biggest folders
     {"search <word>":<15} - (sr) show all the folders containing <word> in their path
-    {"filter <option>":<15} - (ft) manage filters; type 'help filter' for more informations
+    filter <option> [<name>]
+    {" "*15} - (ft) manage filters; type 'help filter' for more informations
     {"quit":<15} - (q|exit) quit the app
 """)
 
 if __name__ == "__main__":
     if not os.path.exists(saveDir):
         os.mkdir(saveDir)
+    if not os.path.exists(filterDir):
+        os.mkdir(filterDir)
 
     displayHelp()
     while True:
@@ -186,6 +199,12 @@ if __name__ == "__main__":
             continue
         match userInput[0]:
             case "help"|"hp"|"h":
+                if not len(userInput) == 1:
+                    match userInput[1]:
+                        case "filter":
+                            #TODO
+                            print("Page not implemented yet.")
+                            continue
                 displayHelp()
             case "quit"|"q"|"exit":
                 break
