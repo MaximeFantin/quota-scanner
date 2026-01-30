@@ -1,10 +1,10 @@
 import os
 
 
-homeDir = os.path.expanduser('~')
-saveDir = homeDir + "/.quota-scanner/"
-scanFile = saveDir + "scan.dat"
-filterDir = saveDir + "filter/"
+HOMEDIR = os.path.expanduser('~')
+SAVEDIR = HOMEDIR + "/.quota-scanner/"
+SCANFILE = SAVEDIR + "scan.dat"
+FILTERDIR = SAVEDIR + "filter/"
 
 
 def humanReadable(size):
@@ -16,12 +16,15 @@ def humanReadable(size):
         return f"{size/1024:.2f}Ko"
     return f"{size}o"
 
+def incorectUsageMsg(command):
+    print(f"Incorect usage: {COMMANDS_REG[command]["usage"]}")
+
 
 
 def scan(*args):
     explored = 0
     folders = {}
-    for root, _, files in os.walk(homeDir):
+    for root, _, files in os.walk(HOMEDIR):
         for filename in files:
             file = os.path.join(root, filename)
             if os.path.isfile(file):
@@ -50,12 +53,23 @@ def scan(*args):
         fout.append(str(si))
         fout.append("\n")
 
-    with open(scanFile, "w") as f:
+    with open(SCANFILE, "w") as f:
         f.write("".join(fout))
 
 
-def topSearch(amount):
-    with open(scanFile, "r") as file:
+def topSearch(*args):
+    if not args:
+        incorectUsageMsg("top")
+        return
+    try:
+        amount = int(args[0])
+    except:
+        print("Incorect usage: top <amount>; <amount> must be a number")
+        return
+    if not os.path.exists(SCANFILE):
+        print("No scan found; Use the 'scan' command first.")
+        return
+    with open(SCANFILE, "r") as file:
         lines = []
         for i in range(amount):
             line = file.readline()
@@ -73,8 +87,15 @@ def topSearch(amount):
     print(stdo)
 
 
-def strSearch(string):
-    with open(scanFile, "r") as file:
+def strSearch(*args):
+    if not args:
+        incorectUsageMsg("search")
+        return
+    if not os.path.exists(SCANFILE):
+        print("No scan found; Use the 'scan' command first.")
+        return
+    string = args[0]
+    with open(SCANFILE, "r") as file:
         lines = []
         for line in file:
             if not line:
@@ -106,7 +127,11 @@ def strSearch(string):
             return
 
 
-def filter(args):
+def filter(*args):
+    if not args:
+        incorectUsageMsg("filter")
+        return
+
     filterHeader = """# Filters can be used to make a selection of folders
 # that can be used for visualization or deletion
 #
@@ -123,52 +148,54 @@ def filter(args):
             if not args[1]:
                 print("Incorect usage: filter create <name>")
                 return
-            with open(filterDir + args[1], "w") as file:
+            with open(FILTERDIR + args[1], "w") as file:
                 file.write(filterHeader % args[1])
             print(f"Created filter {args[1]}\n'filter edit {args[1]}' to edit")
         case "list":
-            if os.path.exists(filterDir):
+            if os.path.exists(FILTERDIR):
                 filters = []
-                for elem in os.listdir(filterDir):
+                for elem in os.listdir(FILTERDIR):
                     if os.path.isfile():
                         filters.append(elem)
                 print("\n".join(filters))
             else:
                 print("No filters found")
         case "edit":
-            if os.path.exists(filterDir):
+            if os.path.exists(FILTERDIR):
                 if not args[1]:
                     print("Incorect usage: filter edit <name>")
                     return
-                if not os.path.exists(filterDir + args[1]):
+                if not os.path.exists(FILTERDIR + args[1]):
                     print(f"This filter does not exists. You can create it using 'filter create {args[1]}'")
                     return
-                os.system(f"nano {filterDir + args[1]}")
+                os.system(f"nano {FILTERDIR + args[1]}")
             else:
                 print("No filters found")
         case "delete":
             if not args[1]:
                 print("Incorect usage: filter delete <name>")
                 return
-            if not os.path.exists(filterDir + args[1]):
+            if not os.path.exists(FILTERDIR + args[1]):
                 print(f"This filter does not exists.")
                 return
-            os.remove(filterDir + args[1])
+            os.remove(FILTERDIR + args[1])
         case "explorer":
-            if not os.path.exists(filterDir):
-                if not os.path.exists(saveDir):
-                    os.mkdir(saveDir)
-                os.mkdir(filterDir)
-            os.system("exo-open --launch FileManager " + filterDir)
+            if not os.path.exists(FILTERDIR):
+                if not os.path.exists(SAVEDIR):
+                    os.mkdir(SAVEDIR)
+                os.mkdir(FILTERDIR)
+            os.system("exo-open --launch FileManager " + FILTERDIR)
         case "debug":
             if not args[1]:
                 print("Incorect usage: filter debug <name>")
                 return
-            if not os.path.exists(filterDir + args[1]):
+            if not os.path.exists(FILTERDIR + args[1]):
                 print(f"This filter does not exists.")
                 return
             #TODO
             print("Feature not implemented yet.")
+        case _:
+            print("Unknown option")
 
 
 
@@ -232,7 +259,7 @@ COMMANDS = [
         "usage": "top <amount>",
         "aliases": ["tp"],
         "description": "show the <amount> biggest folders",
-        "run": lambda *args:..., #TODO
+        "run": topSearch,
         "help": ""
     },
     {
@@ -240,7 +267,7 @@ COMMANDS = [
         "usage": "search <word>",
         "aliases": ["sr"],
         "description": "show all the folders containing <word> in their path",
-        "run": lambda *args:..., #TODO
+        "run": strSearch,
         "help": ""
     },
     {
@@ -248,7 +275,7 @@ COMMANDS = [
         "usage": "filter <option> [<name>]",
         "aliases": ["ft"],
         "description": "manage filters; type 'help filter' for more informations",
-        "run": lambda *args:..., #TODO
+        "run": filter,
         "help": ""
     },
     {
@@ -272,14 +299,14 @@ def buildCommands():
         for als in cmd["aliases"]:
             COMMANDS_LIB[als] = cmd["run"]
 
-#* Menu
 
+#* Menu
 if __name__ == "__main__":
     buildCommands()
-    if not os.path.exists(saveDir):
-        os.mkdir(saveDir)
-    if not os.path.exists(filterDir):
-        os.mkdir(filterDir)
+    if not os.path.exists(SAVEDIR):
+        os.mkdir(SAVEDIR)
+    if not os.path.exists(FILTERDIR):
+        os.mkdir(FILTERDIR)
 
     appRunning = True
     displayHelp()
@@ -289,7 +316,7 @@ if __name__ == "__main__":
         if not userInput:
             continue
         command, args = userInput[0], userInput[1:]
-        COMMANDS_LIB.get(command, lambda *args: print("Unknown command"))(*args)
+        COMMANDS_LIB.get(command, lambda *args: print(f"Unknown command '{command}'"))(*args)
 
 
 
