@@ -138,7 +138,7 @@ def filter(*args):
 # If your filter doesn't work, you can debug it using 'filter debug %n' (feature not implemented yet)
 #
 # In order to configure this filter
-# write a script using the folowing commands:
+# you can write a script using the folowing commands:
 #
 #
 """
@@ -194,9 +194,8 @@ def filter(*args):
                 return
             #TODO
             print("Feature not implemented yet.")
-        case _:
-            print("Unknown option")
-
+        case _ as option:
+            print(f"Unknown option '{option}'")
 
 
 
@@ -239,12 +238,12 @@ COMMANDS = [
         "name": "help",
         "usage": "help [<command>]",
         "aliases": ["h", "hp"],
-        "description": "display this menu",
+        "description": "display the help menu",
         "run": displayHelp,
-        "help": """This command gives extended informations abount a given command or lists all existing commands if no argument is given.\
-        \nex:\n'help scan' gives details about the 'scan' command\
-        \n'help' gives a list of all existing commands\
-        \n\nBut if you read this you already know that."""
+        "help": "This command gives extended informations abount a given command or lists all existing commands if no argument is given."
+            "\nex:\n'help scan' gives details about the 'scan' command."
+            "\n'help' gives a list of all existing commands."
+            "\n\nBut if you read this you already know that."
     },
     {
         "name": "scan",
@@ -252,7 +251,10 @@ COMMANDS = [
         "aliases": ["sc"],
         "description": "deep scan your home directory",
         "run": scan,
-        "help": ""
+        "help": "This command run a deep scan of your home directory."
+            "\nThis mean all the folders in your home directory will be analysed and then strored with their size for later use."
+            "\nRunning the 'scan' command is required befor using data processing commands such as 'search' or 'top'."
+            "\nIf the 'scan' command is not run befor using data processing commands, then said command will not be able to run."
     },
     {
         "name": "top",
@@ -260,7 +262,9 @@ COMMANDS = [
         "aliases": ["tp"],
         "description": "show the <amount> biggest folders",
         "run": topSearch,
-        "help": ""
+        "help": "This command will display a given number of the biggest folders registered by the latest scan."
+            "nex:\n'top 10' displays the 10 folders with the highest size."
+            "n'top 35' displays the 35 folders with the highest size."
     },
     {
         "name": "search",
@@ -268,15 +272,24 @@ COMMANDS = [
         "aliases": ["sr"],
         "description": "show all the folders containing <word> in their path",
         "run": strSearch,
-        "help": ""
+        "help": "This command will give you back all the folders containing a given word in their path among all the saved folders from the latest scan."
+            "\nex:\n'search .vscode' will give you all the sub-folders of the .vscode folder."
     },
     {
         "name": "filter",
         "usage": "filter <option> [<name>]",
         "aliases": ["ft"],
-        "description": "manage filters; type 'help filter' for more informations",
+        "description": f"manage filters; type 'help filter' for more informations",
         "run": filter,
-        "help": ""
+        "help": "This command is used to create and manage filters."
+            "\nFilters can be used to order or delete certain folders."
+            "\nAvalaible options are:"
+            f"\n{"create":<10} - Create a new filter with a given name. ex: 'filter create COOLFILTER'"
+            f"\n{"list":<10} - List all existing filters."
+            f"\n{"edit":<10} - Edit a given filter. ex: 'filter edit COOLFILTER'"
+            f"\n{"delete":<10} - Delete a given filter. ex: 'filter delete COOLFILTER'"
+            f"\n{"explorer":<10} - Open the filters folder in the file explorer."
+            f"\n{"debug":<10} - Debug a given filter. ex: 'filter debug COOLFILTER'"
     },
     {
         "name": "quit",
@@ -317,41 +330,3 @@ if __name__ == "__main__":
             continue
         command, args = userInput[0], userInput[1:]
         COMMANDS_LIB.get(command, lambda *args: print(f"Unknown command '{command}'"))(*args)
-
-
-
-        # match command:
-        #     case "help"|"hp"|"h":
-        #         if not len(userInput) == 1:
-        #             match userInput[1]:
-        #                 case "filter":
-        #                     #TODO
-        #                     print("Page not implemented yet.")
-        #                     continue
-        #         displayHelp()
-        #     case "quit"|"q"|"exit":
-        #         break
-        #     case "scan"|"sc":
-        #         scan()
-        #     case "top"|"tp":
-        #         if len(userInput) == 1:
-        #             print("Incorect usage: top <amount>")
-        #             continue
-        #         try:
-        #             qte = int(userInput[1])
-        #         except:
-        #             print("Incorect usage: top <amount>; <amount> must be a number")
-        #             continue
-        #         topSearch(qte)
-        #     case "search"|"sr":
-        #         if len(userInput) == 1:
-        #             print("Incorect usage: search <word>")
-        #             continue
-        #         strSearch(userInput[1])
-        #     case "filter"|"ft":
-        #         if len(userInput) == 1:
-        #             print("Incorect usage: filter <option>")
-        #             continue
-        #         filter(userInput[1:])
-
-
