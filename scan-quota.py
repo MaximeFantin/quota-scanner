@@ -1,6 +1,6 @@
 import os
 
-
+#* Constants
 HOMEDIR = os.path.expanduser('~')
 SAVEDIR = HOMEDIR + "/.quota-scanner/"
 SCANFILE = SAVEDIR + "scan.dat"
@@ -18,6 +18,62 @@ def humanReadable(size):
 
 def incorectUsageMsg(command):
     print(f"Incorect usage: {COMMANDS_REG[command]["usage"]}")
+
+def loadData():
+    with open(SCANFILE, "r") as file:
+        lines = file.readlines()
+    folders = []
+    for line in lines:
+        if line[-1] == "\n":
+            line = line[:-1]
+        line = line.split()
+        folders.append((" ".join(line[:-1]), int(line[-1])))
+    return folders
+
+def runFilter(file):
+    data = loadData()
+    with open(FILTERDIR + file, "r") as f:
+        lines = f.readlines()
+    for line in lines:
+        if line[0] == '#' or line[0] == '\n':
+            continue
+        if line[-1] == '\n':
+            line = line[:-1]
+        line = line.split()
+        cmd, args = line[0], line[1:]
+        match cmd:
+            case "top":
+                if not args:
+                    continue
+                try:
+                    data = data[:int(args[0])]
+                except:
+                    continue
+            case "bottom":
+                if not args:
+                    continue
+                try:
+                    data = data[:int(args[0])]
+                except:
+                    continue
+            case "slice":
+                if not args:
+                    continue
+                try:
+                    data = data[int(args[0]):int(args[1])]
+                except:
+                    continue
+            case "search":
+                if not args:
+                    continue
+                newDat = []
+                for i in data:
+                    if args[0] in i[0]:
+                        newDat.append(i)
+                data = newDat
+    
+    return data
+
 
 
 
@@ -135,7 +191,7 @@ def filter(*args):
     filterHeader = """# Filters can be used to make a selection of folders
 # that can be used for visualization or deletion
 #
-# If your filter doesn't work, you can debug it using 'filter debug %n' (feature not implemented yet)
+# If your filter doesn't work, you can debug it using 'filter debug %s' (feature not implemented yet)
 #
 # In order to configure this filter
 # you can write a script using the folowing commands:
@@ -298,6 +354,14 @@ COMMANDS = [
         "description": "quit the app",
         "run": quitApp,
         "help": "Do exactly what is advertised: Close the application."
+    },
+    {
+        "name": "test",
+        "usage": "",
+        "aliases": [],
+        "description": "",
+        "run": lambda *args: print(runFilter("test")[:20]),
+        "help": ""
     }
 ]
 
