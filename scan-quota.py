@@ -1,4 +1,5 @@
 import os
+from re import search
 
 #* Constants
 HOMEDIR = os.path.expanduser('~')
@@ -16,6 +17,28 @@ def humanReadable(size):
         return f"{size/1024:.2f}Ko"
     return f"{size}o"
 
+def computerReadable(size):
+    validChar = set("0123456789.")
+    sufix = ""
+    value = 0
+    for i, c in enumerate(size):
+        if c not in validChar:
+            sufix = size[i:]
+            try:
+                value = float(size[:i])
+            except:
+                return
+            break
+    match sufix.upper():
+        case "GO"|"G":
+            return int(value*1024**3)
+        case "MO"|"M":
+            return int(value*1024**2)
+        case "KO"|"K":
+            return int(value*1024)
+        case "O"|"":
+            return int(value)
+
 def incorectUsageMsg(command):
     print(f"Incorect usage: {COMMANDS_REG[command]["usage"]}")
 
@@ -32,7 +55,7 @@ def loadData():
 
 def runFilter(file):
     data = loadData()
-    with open(FILTERDIR + file, "r") as f:
+    with open(FILTERDIR + file + ".dfx", "r") as f:
         lines = f.readlines()
     for line in lines:
         if line[0] == '#' or line[0] == '\n':
@@ -43,35 +66,66 @@ def runFilter(file):
         cmd, args = line[0], line[1:]
         match cmd:
             case "top":
-                if not args:
+                if len(args) != 1:
                     continue
                 try:
                     data = data[:int(args[0])]
                 except:
                     continue
             case "bottom":
-                if not args:
+                if len(args) != 1:
                     continue
                 try:
                     data = data[:int(args[0])]
                 except:
                     continue
             case "slice":
-                if not args:
-                    continue
-                try:
-                    data = data[int(args[0]):int(args[1])]
-                except:
-                    continue
+                if len(args) == 2:
+                    try:
+                        data = data[int(args[0]):int(args[1])]
+                    except:
+                        continue
+                elif len(args) == 3:
+                    try:
+                        data = data[int(args[0]):int(args[1]):int(args[2])]
+                    except:
+                        continue
             case "search":
-                if not args:
+                if len(args) != 1:
                     continue
                 newDat = []
                 for i in data:
                     if args[0] in i[0]:
                         newDat.append(i)
                 data = newDat
-    
+            case "size":
+                if len(args) != 2:
+                    continue
+                minSize = computerReadable(args[0])
+                maxSize = computerReadable(args[1])
+                newDat = []
+                for i in data:
+                    if minSize <= i[1] <= maxSize:
+                        newDat.append(i)
+                data = newDat
+            case "folder":
+                if len(args) != 1:
+                    continue
+                newDat = []
+                for i in data:
+                    folders = i[0].split("/")
+                    if args[0] in folders:
+                        newDat.append(i)
+                data = newDat
+            case "regex":
+                if len(args) != 1:
+                    continue
+                newDat = []
+                for i in data:
+                    if search(args[0], i[0]):
+                        newDat.append(i)
+                data = newDat
+
     return data
 
 
@@ -196,6 +250,14 @@ def filter(*args):
 # In order to configure this filter
 # you can write a script using the folowing commands:
 #
+# top <amount>          - Select the given amount of the biggest folders.
+# bottom <amount>       - Select the given amount of the smallest folders.
+# slice <start> <end> [<step>]
+#                       - Select all folders between the given start and end indexes.
+# search <word>         - Select all folders containing the given word in their path.
+# size <min> <max>      - Select all folders with a size between the given min and max.
+# folder <name>         - Select all folders located in the given folder.
+# regex <regex>         - Select all folders whose path contain a match for the given regular expression.
 #
 """
 
@@ -204,16 +266,16 @@ def filter(*args):
             if not args[1]:
                 print("Incorect usage: filter create <name>")
                 return
-            with open(FILTERDIR + args[1], "w") as file:
+            with open(FILTERDIR + args[1] + ".dfx", "w") as file:
                 file.write(filterHeader % args[1])
             print(f"Created filter {args[1]}\n'filter edit {args[1]}' to edit")
         case "list":
             if os.path.exists(FILTERDIR):
                 filters = []
                 for elem in os.listdir(FILTERDIR):
-                    if os.path.isfile():
-                        filters.append(elem)
-                print("\n".join(filters))
+                    if os.path.isfile(FILTERDIR + elem) and elem[-4:] == ".dfx":
+                        filters.append(elem[:-4])
+                print("--- All filters ---\n" + "\n".join(filters))
             else:
                 print("No filters found")
         case "edit":
@@ -221,20 +283,20 @@ def filter(*args):
                 if not args[1]:
                     print("Incorect usage: filter edit <name>")
                     return
-                if not os.path.exists(FILTERDIR + args[1]):
+                if not os.path.exists(FILTERDIR + args[1] + ".dfx"):
                     print(f"This filter does not exists. You can create it using 'filter create {args[1]}'")
                     return
-                os.system(f"nano {FILTERDIR + args[1]}")
+                os.system(f"nano {FILTERDIR + args[1]}.dfx")
             else:
                 print("No filters found")
         case "delete":
             if not args[1]:
                 print("Incorect usage: filter delete <name>")
                 return
-            if not os.path.exists(FILTERDIR + args[1]):
+            if not os.path.exists(FILTERDIR + args[1] + ".dfx"):
                 print(f"This filter does not exists.")
                 return
-            os.remove(FILTERDIR + args[1])
+            os.remove(FILTERDIR + args[1] + ".dfx")
         case "explorer":
             if not os.path.exists(FILTERDIR):
                 if not os.path.exists(SAVEDIR):
@@ -250,6 +312,30 @@ def filter(*args):
                 return
             #TODO
             print("Feature not implemented yet.")
+        case "run":
+            if not args[1]:
+                print("Incorect usage: filter delete <name>")
+                return
+            if not os.path.exists(FILTERDIR + args[1] + ".dfx"):
+                print(f"This filter does not exists.")
+                return
+            lines = runFilter(args[1])
+            index = 0
+            while index < len(lines):
+                stdo = ""
+                for folder, size in lines[index:index+50]:
+                    stdo += f"\033[94m{folder}\033[0m {humanReadable(size)}\n"
+                print(stdo)
+
+                index += 50
+                if index >= len(lines):
+                    print(f"{len(lines)}/{len(lines)} matches")
+                    break
+
+                print(f"{index}/{len(lines)} matches")
+                userInput = input("Press 'ENTER' to continue\nOr 'q' to exit\n")
+                if userInput.lower() == 'q':
+                    return
         case _ as option:
             print(f"Unknown option '{option}'")
 
@@ -354,14 +440,6 @@ COMMANDS = [
         "description": "quit the app",
         "run": quitApp,
         "help": "Do exactly what is advertised: Close the application."
-    },
-    {
-        "name": "test",
-        "usage": "",
-        "aliases": [],
-        "description": "",
-        "run": lambda *args: print(runFilter("test")[:20]),
-        "help": ""
     }
 ]
 
