@@ -340,6 +340,19 @@ def filter(*args):
             print(f"Unknown option '{option}'")
 
 
+def delete(*args):
+    if len(args) < 2:
+        incorectUsageMsg("delete")
+        return
+    if not os.path.exists(SCANFILE):
+        print("No scan found; Use the 'scan' command first.")
+        return
+    
+    match args[0]:
+        case "word":
+            ...
+
+
 
 def quitApp(*args):
     global appRunning
@@ -373,9 +386,7 @@ def displayHelp(*args):
 
 
 
-
 COMMANDS = [
-    #? "run" key will later be used to directly call the command's code
     {
         "name": "help",
         "usage": "help [<command>]",
@@ -424,7 +435,7 @@ COMMANDS = [
         "description": f"manage filters; type 'help filter' for more informations",
         "run": filter,
         "help": "This command is used to create and manage filters."
-            "\nFilters can be used to order or delete certain folders."
+            "\nFilters can be used to visualize or delete certain folders."
             "\nAvalaible options are:"
             f"\n{"create":<10} - Create a new filter with a given name. ex: 'filter create COOLFILTER'"
             f"\n{"list":<10} - List all existing filters."
@@ -432,6 +443,18 @@ COMMANDS = [
             f"\n{"delete":<10} - Delete a given filter. ex: 'filter delete COOLFILTER'"
             f"\n{"explorer":<10} - Open the filters folder in the file explorer."
             f"\n{"debug":<10} - Debug a given filter. ex: 'filter debug COOLFILTER'"
+            f"\n{"run":<10} - Run a filter and display matching folders. ex: 'filter run COOLFILTER'"
+    },
+    {
+        "name": "delete",
+        "usage": "delete <option> <name>",
+        "aliases": ["dl", "del"],
+        "description": "delete all folders matching the given filter",
+        "run": lambda *args: print("Not implemented yet."), #TODO
+        "help": "This command mass delete folders registered from the last scan using different options."
+            "\nAvalaible options are:"
+            f"\n{"word":<10} - Delete folders containing a given word in their path. ex: 'delete word cache'"
+            f"\n{"filter":<10} - Delete folders matching a given filter. ex: 'delete filter COOLFILTER'"
     },
     {
         "name": "quit",
