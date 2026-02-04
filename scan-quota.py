@@ -1,5 +1,6 @@
 import os
 from re import search
+from shutil import rmtree
 
 #* Constants
 HOMEDIR = os.path.expanduser('~')
@@ -127,6 +128,11 @@ def runFilter(file):
                 data = newDat
 
     return data
+
+def deleteFolders(folders):
+    for folder, _ in folders:
+        if os.path.exists(folder):
+            rmtree(folder)
 
 
 
@@ -348,10 +354,46 @@ def delete(*args):
         print("No scan found; Use the 'scan' command first.")
         return
     
+    source = args[1]
     match args[0]:
         case "word":
-            ...
-
+            with open(SCANFILE, "r") as file:
+                lines = []
+                for line in file:
+                    if not line:
+                        continue
+                    line = line.split()
+                    folder = "".join(line[:-1])
+                    if source in folder:
+                        size = int(line[-1])
+                        lines.append((folder, size))
+            stdo = ""
+            for folder, size in lines[:50]:
+                start = folder.find(source)
+                end = start + len(source)
+                stdo += f"\033[94m{folder[:start]}\033[91m{folder[start:end]}\033[94m{folder[end:]}\033[0m {humanReadable(size)}\n"
+            print(f"\n--- Folders containing {source} ---")
+            print(stdo)
+            print(f"\nAre you sure you want to delete {len(lines)} folders ?")
+            answ = input("Type 'YES' to confirm\n")
+            if answ.upper() == "YES":
+                deleteFolders(lines)
+                print(f"{len(lines)} successfully deleted")
+        case "filter":
+            if not os.path.exists(FILTERDIR + source + ".dfx"):
+                print(f"Filter {source} do not exists")
+                return
+            lines = runFilter(source)
+            stdo = ""
+            for folder, size in lines[:50]:
+                stdo += f"\033[94m{folder}\033[0m {humanReadable(size)}\n"
+            print(f"\n--- Folders containing {source} ---")
+            print(stdo)
+            print(f"\nAre you sure you want to delete {len(lines)} folders ?")
+            answ = input("Type 'YES' to confirm\n")
+            if answ.upper() == "YES":
+                deleteFolders(lines)
+                print(f"{len(lines)} successfully deleted")
 
 
 def quitApp(*args):
@@ -450,7 +492,7 @@ COMMANDS = [
         "usage": "delete <option> <name>",
         "aliases": ["dl", "del"],
         "description": "delete all folders matching the given filter",
-        "run": lambda *args: print("Not implemented yet."), #TODO
+        "run": delete,
         "help": "This command mass delete folders registered from the last scan using different options."
             "\nAvalaible options are:"
             f"\n{"word":<10} - Delete folders containing a given word in their path. ex: 'delete word cache'"
